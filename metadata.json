@@ -1,0 +1,6 @@
+{
+  "name": "Discord 24/7 Audio Priority & 480p Stream Engine",
+  "description": "Discord 24/7 Self-Host Audio-Priority & 480p Screen-Share Streaming Engine with dual track loop (Gradation & Aizo), 180-200% CPU governor, boosted on-mic audio, and asset-free ZIP export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,57 @@
+{
+  "server": {
+    "keepAlivePort": 3000,
+    "healthEndpoint": "/health",
+    "metricsEndpoint": "/cpu-metrics"
+  },
+  "voice": {
+    "enabled": true,
+    "channelId": "1366441630151737445",
+    "guildId": "1323944038117675038",
+    "autoRejoin": true,
+    "rejoinDelaySec": 8,
+    "onMicPriority": true,
+    "permanentSpeaking": true
+  },
+  "mediaEngine": {
+    "resolution": "480p",
+    "width": 854,
+    "height": 480,
+    "fps": 30,
+    "videoBitrateKbps": 900,
+    "audioBitrateKbps": 192,
+    "audioBoost": 1.35,
+    "resampler": "soxr:precision=28",
+    "limiter": "alimiter=limit=0.95:attack=5:release=50:asc=1",
+    "cpuGovernor": {
+      "targetUtilization": "180-195%",
+      "ceilingMax": "200%",
+      "priority": "audio_first",
+      "ffmpegThreads": 3
+    }
+  },
+  "playlist": [
+    {
+      "id": "gradation",
+      "title": "KANA-BOON - ぐらでーしょん (Gradation) [Yamada-kun Lv999 OP]",
+      "videoAsset": "assets/yamada_op.mp4",
+      "audioAsset": "assets/yamada_op.mp3",
+      "resolution": "480p",
+      "durationSec": 235
+    },
+    {
+      "id": "aizo",
+      "title": "AIZO (愛蔵) - 480p Broadcast",
+      "videoAsset": "assets/aizo480p.mp4",
+      "audioAsset": "assets/aizo.mp3",
+      "resolution": "480p",
+      "durationSec": 238
+    }
+  ],
+  "antiDetection": {
+    "twoHourBreakEnabled": true,
+    "intervalMinutes": 120,
+    "breakDurationSecondsRange": [60, 120],
+    "stealthPresence": true
+  }
+}
