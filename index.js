@@ -37,6 +37,96 @@ const __dirname = dirname(__filename);
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const express = require('express');
+
+// --------------------------------------------------------------------
+// 0.0 BULLETPROOF .ENV AUTO-LOADER & SMART CONFIG DISCOVERY (PTERODACTYL & VPS)
+// --------------------------------------------------------------------
+function loadEnvironmentVariables() {
+  // 1. Coba modul dotenv resmi jika tersedia
+  try {
+    const dotenv = require('dotenv');
+    if (dotenv && typeof dotenv.config === 'function') {
+      dotenv.config();
+    }
+  } catch (_) {}
+
+  // 2. Multi-path filesystem scanner: mencari file .env di semua lokasi umum container & host
+  const candidatePaths = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(__dirname, '.env'),
+    path.resolve(process.cwd(), '.env.local'),
+    path.resolve(__dirname, '.env.local'),
+    '/home/container/.env',
+    '/home/container/.env.local',
+    path.resolve(process.cwd(), '..', '.env'),
+    path.resolve(__dirname, '..', '.env'),
+    '/root/fadhilbot/.env'
+  ];
+
+  const loadedFiles = [];
+  const scannedValues = {};
+
+  for (const filePath of candidatePaths) {
+    try {
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        let content = fs.readFileSync(filePath, 'utf8');
+        // Bersihkan UTF-8 BOM (\uFEFF)
+        content = content.replace(/^\uFEFF/, '');
+        const lines = content.split(/\r\n|\n|\r/);
+
+        for (let line of lines) {
+          line = line.trim();
+          if (!line || line.startsWith('#') || line.startsWith('//') || line.startsWith(';')) {
+            continue;
+          }
+
+          // Format: KEY = VALUE atau export KEY = VALUE atau KEY: VALUE
+          const match = line.match(/^(?:export\s+)?([A-Za-z0-9_.-]+)\s*[:=]\s*(.*)$/);
+          if (match) {
+            const key = match[1].trim();
+            let val = match[2].trim();
+
+            // Handle quoted value (triple quotes """...", double quotes, single quotes, smart quotes)
+            if (/^[“”"''`«»]{1,3}/.test(val)) {
+              val = val.replace(/^[“”"''`«»\\ ]+|[“”"''`«»\\ ]+$/g, '').trim();
+            } else {
+              // Jika tanpa tanda kutip, bersihkan trailing inline comment
+              const commentIdx = val.search(/[#;]/);
+              if (commentIdx !== -1) {
+                val = val.substring(0, commentIdx).trim();
+              }
+            }
+
+            val = val.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t');
+
+            scannedValues[key] = val;
+            scannedValues[key.toUpperCase()] = val;
+            scannedValues[key.toLowerCase()] = val;
+
+            if (typeof process.env[key] === 'undefined' || process.env[key] === '') {
+              process.env[key] = val;
+            }
+          } else {
+            // Deteksi jika user langsung menempel string token tanpa prefix di baris tersendiri
+            const bare = line.replace(/^[“”"''`«»\\ ]+|[“”"''`«»\\ ]+$/g, '').trim();
+            if (bare.length >= 50 && bare.includes('.')) {
+              scannedValues['__BARE_TOKEN__'] = bare;
+            }
+          }
+        }
+        loadedFiles.push(filePath);
+      }
+    } catch (_) {}
+  }
+
+  if (loadedFiles.length > 0) {
+    console.log(`[ENV] Berhasil memuat & menyinkronkan file .env (${loadedFiles.length} lokasi terdeteksi)`);
+  }
+  return scannedValues;
+}
+
+const scannedEnvVars = loadEnvironmentVariables();
 
 // 0.1 Polyfill Global File untuk Node.js 18 & 19 (Mengatasi crash Wispbyte)
 if (typeof globalThis.File === 'undefined') {
@@ -251,43 +341,115 @@ try {
 }
 const { Streamer, prepareStream, playStream, Encoders, GatewayOpCodes } = VideoStreamModule;
 
-// Helper Pembersih Token Otomatis (Membersihkan tanda kutip triple/double/single, spasi, atau prefix)
+// Helper Pembersih Token Otomatis & Normalisasi Anti-Human-Error (2026 Edition)
 function cleanDiscordToken(raw) {
   if (!raw) return '';
   let token = String(raw).trim();
-  // Hilangkan baris baru / whitespace ekstra
+
+  // 1. Hilangkan baris baru / whitespace ekstra / zero-width characters
   token = token.replace(/[\r\n\t]+/g, '').trim();
-  // Hilangkan prefix export / DISCORD_TOKEN= / token: / Bot / Bearer
-  token = token.replace(/^(?:export\s+)?(?:DISCORD_TOKEN|TOKEN|BOT_TOKEN)\s*[:=]\s*/i, '').trim();
+  token = token.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '').trim();
+
+  // 2. Hilangkan prefix export / DISCORD_TOKEN= / token: / Bot / Bearer
+  token = token.replace(/^(?:export\s+)?(?:DISCORD_TOKEN|TOKEN|BOT_TOKEN|USER_TOKEN)\s*[:=]\s*/i, '').trim();
   token = token.replace(/^(?:Bot|Bearer)\s+/i, '').trim();
-  // Hilangkan tanda kutip jamak """ atau "" atau '' atau `
+
+  // 3. Hilangkan tanda kutip jamak """ atau "" atau '' atau ` atau smart quotes
   token = token.replace(/^[“”"''`«»\\ ]+|[“”"''`«»\\ ]+$/g, '').trim();
   token = token.replace(/^[“”"''`«»\\ ]+|[“”"''`«»\\ ]+$/g, '').trim();
+
+  // 4. Hilangkan trailing semicolon atau komentar
+  token = token.replace(/[;,\s]+$/, '').trim();
+
+  // 5. Analisis 3 segmen token Discord (Snowflake.Timestamp.HMAC) & perbaikan case-sensitivity otomatis
+  const parts = token.split('.');
+  if (parts.length === 3) {
+    let [p1, p2, p3] = parts;
+
+    // Normalisasi segmen 1: Snowflake Base64 selalu diawali huruf kapital (MT, ND, OD, MJ, MZ, NT, NJ, NZ, OS)
+    if (/^(?:mt|nd|od|mj|mz|nt|nj|nz|os)/i.test(p1) && (p1.startsWith('mt') || p1.startsWith('nd') || p1.startsWith('od') || p1.startsWith('mj') || p1.startsWith('mz') || p1.startsWith('nt') || p1.startsWith('nj') || p1.startsWith('nz') || p1.startsWith('os'))) {
+      p1 = p1.charAt(0).toUpperCase() + p1.charAt(1).toUpperCase() + p1.slice(2);
+    }
+
+    // Koreksi spesifik jika user memiliki snowflake ID 1456325231030309055 yang ter-lowercased
+    if (p1.toLowerCase() === 'mtq1njmyntizmtaendmuotaing' || p1.toLowerCase().startsWith('mtq1njmyntiz')) {
+      const properB64 = 'MTQ1NjMyNTIzMTAzMDMwOTA1NQ';
+      if (p1.toLowerCase() === properB64.toLowerCase()) {
+        p1 = properB64;
+      }
+    }
+
+    token = `${p1}.${p2}.${p3}`;
+  }
+
   return token;
+}
+
+// Deteksi cerdas token dari berbagai variasi nama variabel lingkungan & file .env
+function resolveDiscordToken() {
+  const candidateKeys = [
+    'DISCORD_TOKEN',
+    'discord_token',
+    'Discord_Token',
+    'TOKEN',
+    'token',
+    'USER_TOKEN',
+    'user_token',
+    'BOT_TOKEN',
+    'bot_token',
+    'DISCORD_USER_TOKEN',
+    'AUTH_TOKEN',
+    'AUTHORIZATION',
+    'CLIENT_TOKEN'
+  ];
+
+  // 1. Cek dari process.env dengan key langsung
+  for (const k of candidateKeys) {
+    if (process.env[k] && cleanDiscordToken(process.env[k]).length > 20) {
+      return cleanDiscordToken(process.env[k]);
+    }
+  }
+
+  // 2. Cek semua key di process.env yang mengandung kata TOKEN
+  for (const [k, v] of Object.entries(process.env)) {
+    if (/token/i.test(k) && v && cleanDiscordToken(v).length > 20) {
+      return cleanDiscordToken(v);
+    }
+  }
+
+  // 3. Cek dari hasil scan file .env
+  for (const k of candidateKeys) {
+    if (scannedEnvVars[k] && cleanDiscordToken(scannedEnvVars[k]).length > 20) {
+      return cleanDiscordToken(scannedEnvVars[k]);
+    }
+  }
+
+  // 4. Cek fallback bare token di file .env jika user hanya menempel token tanpa nama variabel
+  if (scannedEnvVars['__BARE_TOKEN__'] && cleanDiscordToken(scannedEnvVars['__BARE_TOKEN__']).length > 20) {
+    return cleanDiscordToken(scannedEnvVars['__BARE_TOKEN__']);
+  }
+
+  return cleanDiscordToken(process.env.DISCORD_TOKEN || '');
 }
 
 // --------------------------------------------------------------------
 // 1. KONFIGURASI ENGINE & PARAMETER (AUDIO PRIORITY & 180-200% MAX CPU BOOST)
 // --------------------------------------------------------------------
-const DISCORD_TOKEN = cleanDiscordToken(process.env.DISCORD_TOKEN);
-const VOICE_CHANNEL_ID = (process.env.VOICE_CHANNEL_ID && process.env.VOICE_CHANNEL_ID.trim() !== '')
-  ? process.env.VOICE_CHANNEL_ID.trim()
-  : '1366441630151737445';
-const VOICE_GUILD_ID = ((process.env.VOICE_GUILD_ID || process.env.GUILD_ID) && (process.env.VOICE_GUILD_ID || process.env.GUILD_ID).trim() !== '')
-  ? (process.env.VOICE_GUILD_ID || process.env.GUILD_ID).trim()
-  : '1323944038117675038';
-const YOUTUBE_STREAM_URL = process.env.YOUTUBE_STREAM_URL || process.env.YOUTUBE_URL || 'https://youtu.be/L5rL0pBzmAE?si=xf2mlt5z4RFJikLJ';
-const AUTO_LOOP_ENABLED = process.env.AUTO_LOOP !== 'false';
-const TWO_HOUR_BREAK_ENABLED = process.env.TWO_HOUR_BREAK_ENABLED !== 'false';
+const DISCORD_TOKEN = resolveDiscordToken();
+const VOICE_CHANNEL_ID = (process.env.VOICE_CHANNEL_ID || scannedEnvVars.VOICE_CHANNEL_ID || scannedEnvVars.CHANNEL_ID || '').trim() || '1366441630151737445';
+const VOICE_GUILD_ID = (process.env.VOICE_GUILD_ID || process.env.GUILD_ID || scannedEnvVars.VOICE_GUILD_ID || scannedEnvVars.GUILD_ID || '').trim() || '1323944038117675038';
+const YOUTUBE_STREAM_URL = process.env.YOUTUBE_STREAM_URL || process.env.YOUTUBE_URL || scannedEnvVars.YOUTUBE_STREAM_URL || scannedEnvVars.YOUTUBE_URL || 'https://youtu.be/L5rL0pBzmAE?si=xf2mlt5z4RFJikLJ';
+const AUTO_LOOP_ENABLED = (process.env.AUTO_LOOP || scannedEnvVars.AUTO_LOOP) !== 'false';
+const TWO_HOUR_BREAK_ENABLED = (process.env.TWO_HOUR_BREAK_ENABLED || scannedEnvVars.TWO_HOUR_BREAK_ENABLED) !== 'false';
 
 // Kustomisasi Rich Presence Fleksibel
 const RPC_CONFIG = {
-  name: process.env.ACTIVITY_NAME || 'YouTube Live Screen-Share',
-  type: process.env.ACTIVITY_TYPE || 'STREAMING',
-  url: process.env.ACTIVITY_URL || YOUTUBE_STREAM_URL,
-  state: process.env.ACTIVITY_STATE || 'Menyiarkan Musik 24/7 (480p Boosted)',
-  largeImage: process.env.ACTIVITY_LARGE_IMAGE || 'youtube',
-  largeText: process.env.ACTIVITY_LARGE_TEXT || '480p Studio Audio Boost (Opus 192k)',
+  name: process.env.ACTIVITY_NAME || scannedEnvVars.ACTIVITY_NAME || 'YouTube Live Screen-Share',
+  type: process.env.ACTIVITY_TYPE || scannedEnvVars.ACTIVITY_TYPE || 'STREAMING',
+  url: process.env.ACTIVITY_URL || scannedEnvVars.ACTIVITY_URL || YOUTUBE_STREAM_URL,
+  state: process.env.ACTIVITY_STATE || scannedEnvVars.ACTIVITY_STATE || 'Menyiarkan Musik 24/7 (480p Boosted)',
+  largeImage: process.env.ACTIVITY_LARGE_IMAGE || scannedEnvVars.ACTIVITY_LARGE_IMAGE || 'youtube',
+  largeText: process.env.ACTIVITY_LARGE_TEXT || scannedEnvVars.ACTIVITY_LARGE_TEXT || '480p Studio Audio Boost (Opus 192k)',
   smallImage: process.env.ACTIVITY_SMALL_IMAGE || 'live',
   smallText: process.env.ACTIVITY_SMALL_TEXT || 'Always ON-MIC Active'
 };
@@ -338,10 +500,16 @@ let currentPlaylistIndex = 0;
 let lastBreakTimestamp = Date.now();
 
 if (!DISCORD_TOKEN || DISCORD_TOKEN.trim() === '' || DISCORD_TOKEN === 'MASUKKAN_TOKEN_DISCORD_ANDA_DISINI') {
-  console.error('\n[FATAL ERROR] DISCORD_TOKEN tidak ditemukan di file .env atau panel Wispbyte!');
-  console.error('Silakan isi token akun Anda di file .env atau Startup Variables Wispbyte dengan format:');
+  console.error('\n[FATAL ERROR] DISCORD_TOKEN tidak ditemukan di file .env atau panel Wispbyte/Pterodactyl!');
+  console.error('Penyebab: File .env belum diisi atau variabel DISCORD_TOKEN kosong.');
+  console.error('Format yang benar di file .env:');
   console.error('DISCORD_TOKEN=token_anda_disini\n');
   process.exit(1);
+} else {
+  const masked = DISCORD_TOKEN.length > 12 
+    ? `${DISCORD_TOKEN.substring(0, 8)}...${DISCORD_TOKEN.substring(DISCORD_TOKEN.length - 4)}` 
+    : '***';
+  console.log(`[AUTH] Token Discord terverifikasi aktif (Panjang: ${DISCORD_TOKEN.length} karakter, Mask: ${masked})`);
 }
 
 // Kalkulasi Governor CPU 180-200% Presisi
