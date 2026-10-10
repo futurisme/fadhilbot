@@ -433,6 +433,7 @@ const DISCORD_TOKEN = resolveDiscordToken();
 const VOICE_CHANNEL_ID = (process.env.VOICE_CHANNEL_ID || scannedEnvVars.VOICE_CHANNEL_ID || scannedEnvVars.CHANNEL_ID || '').trim() || '1366441630151737445';
 const VOICE_GUILD_ID = (process.env.VOICE_GUILD_ID || process.env.GUILD_ID || scannedEnvVars.VOICE_GUILD_ID || scannedEnvVars.GUILD_ID || '').trim() || '1323944038117675038';
 const YOUTUBE_STREAM_URL = process.env.YOUTUBE_STREAM_URL || process.env.YOUTUBE_URL || scannedEnvVars.YOUTUBE_STREAM_URL || scannedEnvVars.YOUTUBE_URL || 'https://youtu.be/L5rL0pBzmAE?si=xf2mlt5z4RFJikLJ';
+const YOUTUBE_TRACK_TITLE = process.env.YOUTUBE_TRACK_TITLE || scannedEnvVars.YOUTUBE_TRACK_TITLE || 'KANA-BOON - ぐらでーしょん (Gradation) [Yamada-kun Lv999 OP]';
 const AUTO_LOOP_ENABLED = (process.env.AUTO_LOOP || scannedEnvVars.AUTO_LOOP) !== 'false';
 const TWO_HOUR_BREAK_ENABLED = (process.env.TWO_HOUR_BREAK_ENABLED || scannedEnvVars.TWO_HOUR_BREAK_ENABLED) !== 'false';
 
@@ -733,16 +734,15 @@ async function startContinuousStream() {
 
       const hasVideo = fs.existsSync(currentTrack.videoFile);
       const hasAudio = fs.existsSync(currentTrack.audioFile);
-      const targetVideo = hasVideo ? currentTrack.videoFile : (fs.existsSync(PLAYLIST[0].videoFile) ? PLAYLIST[0].videoFile : currentTrack.videoFile);
-      const targetAudio = hasAudio ? currentTrack.audioFile : (fs.existsSync(PLAYLIST[0].audioFile) ? PLAYLIST[0].audioFile : null);
+      // Prioritaskan file video MP4 lengkap yang sudah memuat trek audio & video
+      const mediaSource = hasVideo 
+        ? currentTrack.videoFile 
+        : (fs.existsSync(PLAYLIST[0].videoFile) 
+          ? PLAYLIST[0].videoFile 
+          : (hasAudio ? currentTrack.audioFile : currentTrack.videoFile));
 
-      // PENTING: Tanpa '-re' agar kalkulasi audio & video dipace presisi oleh WebRTC pacer
-      // dan audio on-mic mendapatkan prioritas komputasi penuh (180-195% target)
-      let inputOptions = ['-threads', String(FFMPEG_THREADS)];
-      if (targetAudio && fs.existsSync(targetAudio)) {
-        // Map audio asli dari file .mp3 murni (yamada_op.mp3 / aizo.mp3)
-        inputOptions = ['-i', targetAudio, '-map', '1:v:0', '-map', '0:a:0', '-threads', String(FFMPEG_THREADS)];
-      }
+      // Input options bersih tanpa argumen -i / -map ganda yang memicu syntax error FFmpeg
+      const inputOptions = ['-threads', String(FFMPEG_THREADS)];
 
       // Software encoder x264 'fast' 480p stabil anti-lag
       const encoder = Encoders.software({
@@ -754,7 +754,7 @@ async function startContinuousStream() {
 
       broadcastAbortController = new AbortController();
 
-      const { command, output } = prepareStream(targetVideo, {
+      const { command, output } = prepareStream(mediaSource, {
         encoder,
         width: VIDEO_WIDTH,
         height: VIDEO_HEIGHT,
