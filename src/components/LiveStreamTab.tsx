@@ -35,12 +35,12 @@ export function LiveStreamTab({
   const currentLive = voiceConfig.liveStream || {
     enabled: true,
     youtubeUrl: 'https://youtu.be/L5rL0pBzmAE?si=xf2mlt5z4RFJikLJ',
-    title: 'KANA-BOON - ぐらでーしょん (Gradation) ↔ AIZO (480p)',
+    title: 'KANA-BOON - ぐらでーしょん (Gradation) ↔ AIZO (360p-480p Adaptive)',
     autoLoop: true,
     hourlyBreakEnabled: true,
     breakDurationMinutes: 1.5,
     hourlyIntervalMinutes: 120,
-    audioVolume: 1.35,
+    audioVolume: 1.45,
     streamType: 'screenshare'
   };
 
@@ -48,7 +48,7 @@ export function LiveStreamTab({
   const [trackTitle, setTrackTitle] = useState(currentLive.title);
   const [autoLoop, setAutoLoop] = useState(currentLive.autoLoop);
   const [hourlyBreakEnabled, setHourlyBreakEnabled] = useState(currentLive.hourlyBreakEnabled);
-  const [audioVolume, setAudioVolume] = useState(currentLive.audioVolume || 1.35);
+  const [audioVolume, setAudioVolume] = useState(currentLive.audioVolume || 1.45);
   const [appliedToast, setAppliedToast] = useState(false);
   const [copiedEnvToast, setCopiedEnvToast] = useState(false);
 
@@ -60,9 +60,9 @@ export function LiveStreamTab({
   const [simBreakCountdown, setSimBreakCountdown] = useState(90); // 1.5 mins
   const [simLogs, setSimLogs] = useState<Array<{ time: string; text: string; type: 'stream' | 'break' | 'success' | 'info' }>>([
     { time: '14:10:00', text: '[GATEWAY SHIELD] VoiceWebSocket 4006 Shield aktif, sesi room voice DAVE terverifikasi', type: 'info' },
-    { time: '14:10:01', text: '[GATEWAY] Mengirim Opcode 18 (STREAM_CREATE) 480p @ 30fps (854x480 standard)', type: 'stream' },
-    { time: '14:10:02', text: '[AUDIO ON-MIC] Dual Audio Broadcast aktif: Opus 48kHz Stereo 192kbps CBR (+2.6dB Boosted)', type: 'success' },
-    { time: '14:10:03', text: '[CPU GOVERNOR] Daya komputasi terkunci di 188.4% (Audio Priority: 39.5%, Video 480p: 142%)', type: 'success' }
+    { time: '14:10:01', text: '[VIDEO ARBITER] Profil 360p-480p Adaptif aktif @ 22-24 FPS (Diskriminasi Video Server)', type: 'stream' },
+    { time: '14:10:02', text: '[AUDIO SUPREMACY] On-Mic MP3 Prioritas Mutlak #1: Opus 48kHz Stereo 192kbps CBR (+3.2dB Boosted, Zero-Drop)', type: 'success' },
+    { time: '14:10:03', text: '[CPU GOVERNOR] Daya komputasi terkunci di 186.4% (Audio DSP: 41.5%, Video Encode: 88-124%)', type: 'success' }
   ]);
 
   // Timer simulation for visual delight
@@ -252,15 +252,15 @@ BREAK_DURATION_SECONDS=90
               </div>
               <div className="flex items-center justify-between text-[#94a3b8]">
                 <span>Resolusi Streaming:</span>
-                <span className="text-sky-400 font-mono font-bold">480p (854×480 @ 30fps) - Ringan &amp; 0% Lag</span>
+                <span className="text-sky-400 font-mono font-bold">360p–480p Adaptif @ 22–24 FPS (Server Throttle Active)</span>
               </div>
               <div className="flex items-center justify-between text-[#94a3b8]">
                 <span>Karakteristik Audio:</span>
-                <span className="text-emerald-400 font-mono font-bold">Opus 48kHz Stereo 192kbps • Boost 1.35x (+2.6dB) &amp; Limiter</span>
+                <span className="text-emerald-400 font-mono font-bold">Opus 48kHz Stereo • Boost 1.45x (+3.2dB) • Limiter 0.96 (100% Zero-Drop)</span>
               </div>
               <div className="flex items-center justify-between text-[#94a3b8]">
-                <span>Sistem Rotasi:</span>
-                <span className="text-purple-400 font-mono">Loop Bergilir: Gradation ↔ AIZO (Jeda 90s per 2 Jam)</span>
+                <span>Sistem Rotasi &amp; Anti-Drop:</span>
+                <span className="text-purple-400 font-mono">Loop Bergilir: Gradation ↔ AIZO • Diskriminasi Video Server Aktif</span>
               </div>
             </div>
 
@@ -296,23 +296,23 @@ BREAK_DURATION_SECONDS=90
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-medium text-[#cbd5e1] flex items-center gap-1.5">
                     <Volume2 className="w-3.5 h-3.5 text-[#38bdf8]" />
-                    <span>Penguat Volume Audio (Loudness Booster):</span>
+                    <span>Penguat Volume Audio On-Mic (Audio Supremacy Booster):</span>
                   </label>
                   <span className="text-xs font-mono text-emerald-400 font-bold">
-                    {Math.round(audioVolume * 100)}% ({audioVolume > 1 ? 'Volume Boost Keras & Jelas' : 'Normal'})
+                    {Math.round(audioVolume * 100)}% (+3.2dB Boost Studio Keras &amp; Jernih)
                   </span>
                 </div>
                 <input
                   type="range"
-                  min="0.8"
-                  max="1.5"
+                  min="1.0"
+                  max="1.6"
                   step="0.05"
                   value={audioVolume}
                   onChange={(e) => setAudioVolume(parseFloat(e.target.value))}
                   className="w-full accent-[#0284c7] cursor-pointer"
                 />
                 <span className="text-[11px] text-[#64748b]">
-                  Ditingkatkan ke 125%–130% agar suara vokal KANA-BOON terdengar lantang dan bertenaga di Voice Channel tanpa distorsi klip.
+                  Dikalibrasi optimal ke 145% (+3.2dB) dengan brickwall limiter 0.96 peak (-0.35dBFS) untuk mencegah AGC ducking Discord sehingga suara di mic akun selalu keras mantap tanpa distorsi.
                 </span>
               </div>
 

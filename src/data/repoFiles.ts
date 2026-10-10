@@ -47,7 +47,7 @@ export function getRepositoryFiles(
       hourlyBreakEnabled: true,
       breakDurationMinutes: 1.5,
       hourlyIntervalMinutes: 120,
-      audioVolume: 1.35,
+      audioVolume: 1.45,
       streamType: 'screenshare'
     }
   };
@@ -84,7 +84,7 @@ export function getRepositoryFiles(
 
   // 3. .env aktif yang sinkron dengan input form
   const envContent = `# ================================================================
-# KONFIGURASI DISCORD 24/7 AUDIO-PRIORITY & 480p STREAM ENGINE (2026)
+# KONFIGURASI DISCORD 24/7 AUDIO SUPREMACY & ADAPTIVE 360p-480p ENGINE (2026)
 # ================================================================
 
 DISCORD_TOKEN=${displayToken}
@@ -97,17 +97,22 @@ GUILD_ID=${effectiveGuildId}
 VOICE_AUTO_REJOIN=${defaultVoice.autoRejoin}
 VOICE_REJOIN_DELAY_SEC=${defaultVoice.rejoinDelaySec}
 
-# Prioritas Tertinggi CPU: Audio On-Mic Boosted & Video Screen-Share 480p
+# Prioritas Mutlak #1 Audio On-Mic MP3 & Adaptive Video Screen-Share (360p-480p @ 22-24 FPS)
 ENABLE_STREAM=true
 AUTO_LOOP=true
-VIDEO_RESOLUTION=480p
+VIDEO_RESOLUTION_MIN=360p
+VIDEO_RESOLUTION_MAX=480p
 VIDEO_WIDTH=854
 VIDEO_HEIGHT=480
-VIDEO_FPS=30
-VIDEO_BITRATE=900
+VIDEO_FPS_MIN=22
+VIDEO_FPS_MAX=24
+VIDEO_FPS=24
+VIDEO_BITRATE=550
+VIDEO_BITRATE_MAX=680
 AUDIO_BITRATE=192
-AUDIO_BOOST=1.35
-AUDIO_PRIORITY=true
+AUDIO_BOOST=1.45
+AUDIO_PRIORITY=extreme_zero_drop
+ADAPTIVE_VIDEO_DISCRIMINATION=true
 FFMPEG_THREADS=3
 
 # Anti-Deteksi Discord: Jeda Istirahat 1-2 Menit Setiap 2 Jam

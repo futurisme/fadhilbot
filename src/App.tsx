@@ -45,13 +45,18 @@ export default function App() {
     liveStream: {
       enabled: true,
       youtubeUrl: 'https://youtu.be/L5rL0pBzmAE?si=xf2mlt5z4RFJikLJ',
-      title: 'gradation',
+      title: 'KANA-BOON - ぐらでーしょん (Gradation) ↔ AIZO (360p-480p Adaptive)',
       autoLoop: true,
-      hourlyBreakEnabled: false,
-      breakDurationMinutes: 2.5,
-      hourlyIntervalMinutes: 55,
-      audioVolume: 1.25,
-      streamType: 'screenshare'
+      hourlyBreakEnabled: true,
+      breakDurationMinutes: 1.5,
+      hourlyIntervalMinutes: 120,
+      audioVolume: 1.45,
+      streamType: 'screenshare',
+      videoMinResolution: '360p',
+      videoMaxResolution: '480p',
+      videoFps: 24,
+      adaptiveDiscrimination: true,
+      audioPriorityMode: 'extreme_zero_drop'
     }
   });
 

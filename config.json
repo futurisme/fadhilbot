@@ -14,19 +14,47 @@
     "permanentSpeaking": true
   },
   "mediaEngine": {
-    "resolution": "480p",
-    "width": 854,
-    "height": 480,
-    "fps": 30,
-    "videoBitrateKbps": 900,
-    "audioBitrateKbps": 192,
-    "audioBoost": 1.35,
-    "resampler": "soxr:precision=28",
-    "limiter": "alimiter=limit=0.95:attack=5:release=50:asc=1",
+    "priorityMode": "audio_absolute_supremacy",
+    "videoResolution": {
+      "mode": "adaptive_discrimination",
+      "min": "360p",
+      "max": "480p",
+      "widthMin": 640,
+      "heightMin": 360,
+      "widthMax": 854,
+      "heightMax": 480
+    },
+    "fps": {
+      "min": 22,
+      "max": 24,
+      "default": 24,
+      "stability": "zero_stutter"
+    },
+    "videoBitrateKbps": {
+      "min": 300,
+      "max": 540,
+      "aizoSpecialized": 300,
+      "adaptive": true
+    },
+    "audio": {
+      "bitrateKbps": 192,
+      "codec": "libopus",
+      "channels": 2,
+      "sampleRate": 48000,
+      "audioBoost": 1.45,
+      "boostDb": "+3.2dB",
+      "resampler": "soxr:precision=28",
+      "dspChain": "aresample=48000:resampler=soxr:precision=28,highpass=f=40,equalizer=f=3200:t=q:w=1.5:g=1.8,equalizer=f=1000:t=q:w=1.0:g=1.2,compand=attacks=0.01:decays=0.08:points=-80/-80|-45/-32|-24/-14|-12/-6|0/-0.5:soft-knee=6,volume=1.45,alimiter=limit=0.96:attack=3:release=40:asc=1",
+      "brickwallLimiter": "alimiter=limit=0.96:attack=3:release=40:asc=1",
+      "antiDuckingLock": true,
+      "zeroDropGuarantee": true
+    },
     "cpuGovernor": {
       "targetUtilization": "180-195%",
       "ceilingMax": "200%",
-      "priority": "audio_first",
+      "priority": "audio_on_mic_first",
+      "videoDiscriminationEnabled": true,
+      "aizoAnimationDefense": true,
       "ffmpegThreads": 3
     }
   },

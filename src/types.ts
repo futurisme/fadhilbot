@@ -32,8 +32,13 @@ export interface LiveStreamConfig {
   hourlyBreakEnabled: boolean;
   breakDurationMinutes: number; // 2-3 mins
   hourlyIntervalMinutes: number; // ~50-55 mins
-  audioVolume: number; // 1.0 - 1.5
+  audioVolume: number; // 1.0 - 1.5 (default 1.45)
   streamType: 'screenshare' | 'camera';
+  videoMinResolution?: '360p' | '400p' | '480p';
+  videoMaxResolution?: '360p' | '400p' | '480p';
+  videoFps?: 22 | 23 | 24;
+  adaptiveDiscrimination?: boolean;
+  audioPriorityMode?: 'extreme_zero_drop' | 'studio_master';
 }
 
 export interface VoiceConfig {
