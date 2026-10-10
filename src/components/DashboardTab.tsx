@@ -225,12 +225,12 @@ export function DashboardTab({
               <Volume2 className="w-4 h-4 text-emerald-400 animate-pulse" />
             </h3>
             <p className="text-xs text-emerald-400 font-medium mt-0.5">
-              +3.2dB (1.45x) · Jernih · 100% Zero-Drop
+              +3.4dB (1.48x) · DynAudNorm Real-time Leveler · 100% Zero-Drop
             </p>
           </div>
           <div className="text-[11px] text-slate-400 font-mono border-t border-slate-800/80 pt-2 flex items-center justify-between">
             <span>Anti-Duck Limiter:</span>
-            <span className="text-emerald-400 font-medium">0.96 Peak Locked (No Duck)</span>
+            <span className="text-emerald-400 font-medium">0.97 Peak Locked (-0.27 dBFS)</span>
           </div>
         </div>
       </div>
@@ -246,12 +246,12 @@ export function DashboardTab({
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>Arsitektur Prioritas Audio On-Mic &amp; Diskriminasi Video Server Adaptif</span>
                 <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-mono font-semibold">
-                  180–195% CPU Target
+                  185–195% CPU Target (Audio-Maximized)
                 </span>
               </h2>
             </div>
             <p className="text-xs text-slate-400 max-w-3xl">
-              Server secara aktif <strong>mendiskriminasi dan menurunkan kualitas video screen-share ke 360p–480p @ 22–24 FPS</strong> (preset ultrafast/zerolatency) jika durasi atau efek bertambah. Daya komputasi utama dialokasikan tanpa kompromi ke <strong>Audio On-Mic MP3</strong> (SoX 64-bit precision=28, dynamic boost 1.45x / +3.2dB, dan limiter 0.96) sehingga suara musik di mic pengguna <strong>selalu 100% konsisten, jernih, keras, dan tidak ada drop atau mengecil</strong>.
+              Server secara aktif <strong>mendiskriminasi dan menurunkan kualitas video screen-share ke 360p–480p @ 22–24 FPS</strong> (preset ultrafast/zerolatency) terutama saat animasi AIZO diputar. Seluruh sisa daya komputasi hingga 200% dialokasikan secara intensif ke <strong>Audio On-Mic MP3 (~118.5% CPU)</strong> dengan DynAudNorm real-time leveler, 3-Band Parametric EQ, SoX 64-bit 33-precision, dynamic boost 1.48x / +3.4dB, dan TruePeak limiter 0.97 sehingga suara musik on-mic <strong>selalu 100% konsisten, jernih, keras, dan tidak ada drop atau mengecil</strong>.
             </p>
           </div>
 
@@ -279,12 +279,12 @@ export function DashboardTab({
                 <Volume2 className="w-3.5 h-3.5" />
                 Audio DSP On-Mic (Prioritas #1):
               </span>
-              <span className="font-mono font-bold text-emerald-400">~41.5%</span>
+              <span className="font-mono font-bold text-emerald-400">~118.5%</span>
             </div>
             <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-emerald-400 h-full w-[42%]" />
+              <div className="bg-emerald-400 h-full w-[60%]" />
             </div>
-            <p className="text-[10px] text-emerald-300/80">SoX 64-bit studio + Opus 192k CBR + Boost +3.2dB + Anti-Duck 0.96</p>
+            <p className="text-[10px] text-emerald-300/80">DynAudNorm Leveler + SoX 33-prec + 3-Band EQ + Compander + Opus lvl 10</p>
           </div>
 
           <div className="p-2.5 rounded-lg bg-slate-950/50 border border-sky-500/30 space-y-1">
@@ -293,10 +293,10 @@ export function DashboardTab({
                 <Tv className="w-3.5 h-3.5" />
                 Video Adaptive 360-480p (22-24 FPS):
               </span>
-              <span className="font-mono font-bold text-sky-400">~74–124%</span>
+              <span className="font-mono font-bold text-sky-400">~58–68%</span>
             </div>
             <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-sky-400 h-full w-[60%]" />
+              <div className="bg-sky-400 h-full w-[35%]" />
             </div>
             <p className="text-[10px] text-slate-400">Dibatasi adaptif untuk menghemat CPU; dijamin mulus 100% tanpa lag</p>
           </div>

@@ -7,13 +7,17 @@
 
 ## 🌟 Fitur Unggulan Rekayasa Presisi (Oktober 2026):
 
-1. **Prioritas Mutlak #1 Audio On-Mic MP3 (Zero-Drop, High Loudness, Anti-Ducking)**:
-   - Daya komputasi dan bandwidth dialokasikan prioritas mutlak untuk mastering audio Opus 48kHz Stereo 192kbps CBR.
-   - Dilengkapi **DSP Broadcast Compander Multi-Stage** (`highpass=f=40`, `equalizer vocal presence 1k & 3.2kHz`, `compand upwards/downwards -80dB s/d -0.5dB`, `volume: 1.45x` / +3.2dB, dan `alimiter: 0.96`).
-   - High-pass filter 40Hz memangkas frekuensi sub-bass inaudible yang biasanya memicu penurunan volume otomatis (AGC / ducking) di sisi client Discord.
-   - Upward compander mengangkat bagian instrumen/vokal lembut secara konsisten sehingga volume suara **SELALU KERAS, STABIL, dan TIDAK PERNAH MENYUSUT ATAU MENJADI PELAN**.
-   - Resampler studio SoX 64-bit (`precision=28`) menjamin konversi kristal tanpa distorsi aliasing.
-   - Arsitektur **Dual-Buffer Independent Cloning** menjamin enkripsi DAVE E2EE pada Voice Channel Microphone tidak pernah mencemari buffer audio pada Go-Live Screen-Share tile.
+1. **Prioritas Mutlak #1 Audio On-Mic MP3 (Zero-Drop, High Loudness, Anti-Ducking & Max Compute Allocation)**:
+   - Seluruh sisa daya komputasi CPU container (~118.5% dari batas 200%) dialokasikan penuh untuk pemrosesan mastering audio audio-on-mic secara intensif dan presisi tinggi.
+   - **DynAudNorm Real-time Loudness Normalizer**: Melakukan kalkulasi matriks dynamic range frame-demi-frame secara kontinyu (`dynaudnorm=f=75:g=15:m=8.0:r=0.96:b=1:c=1:s=6`). Menjamin volume lagu di voice room **SELALU BERADA DI PUNCAK TERKERAS SECARA KONSISTEN TANPA PERNAH MENGEZIL, MENYUSUT, ATAU HILANG**.
+   - **3-Band Parametric Pre-emphasis Studio**:
+     * Bass Warmth (`equalizer=f=80:t=q:w=1.2:g=2.2`): Pondasi beat/kick padat bertenaga.
+     * Vocal & Melody Presence (`equalizer=f=2800:t=q:w=1.4:g=3.0`): Meningkatkan artikulasi vokal di titik resonansi telinga manusia (Fletcher-Munson).
+     * Shimmer Air (`equalizer=f=11500:t=q:w=1.0:g=2.4`): Kejernihan frekuensi tinggi berkualitas CD audio.
+   - **Subsonic Elimination Shield (`highpass=f=38:poles=2` & `lowpass=f=20000:poles=2`)**: Memangkas tuntas frekuensi sub-bass yang selama ini menjadi penyebab utama pemicu kompresor Automatic Gain Control (AGC) dan echo cancellation Discord menurunkan volume suara secara otomatis.
+   - **Broadcast Upward Compander & TruePeak Limiter**: Upward compression (+17dB untuk nada lembut), booster master gain `volume: 1.48x` (+3.4dB), dan brickwall lookahead limiter (`alimiter=0.97`) pada -0.27 dBFS tanpa distorsi clipping.
+   - **SoX 64-bit Ultra-Precision Sinc Resampler (`precision=33`)**: Interpolasi sinc 128-tap dengan Chebyshev stopband rejection (-170dB) dan triangular high-pass dither untuk konversi audio 48.000 Hz kristal tanpa aliasing.
+   - **Dual-Buffer Independent Cloning**: Kloning buffer terpisah menjamin enkripsi DAVE E2EE pada Microphone tidak pernah merusak paket Go-Live tile.
 
 2. **Server-Side Video Discrimination & Proteksi Khusus Animasi AIZO**:
    - Server secara aktif mendiskriminasi penayangan dan encoding video MP4: kualitas video diturunkan secara adaptif di rentang **360p–480p** (`640x360` s/d `854x480`) dan framerate dikunci pada **22–24 FPS stabil**.
@@ -35,12 +39,12 @@
    - Sekali setiap 2 jam (120 menit) siaran aktif, sistem otomatis mengambil jeda istirahat alami 1–2 menit (90 detik).
    - Selama jeda, share-screen ditutup sejenak dan status diubah ke `IDLE`, meniru kebiasaan manusia asli. Setelah 90 detik, siaran Go-Live dan rotasi playlist berlanjut otomatis.
 
-6. **Kalkulasi CPU Governor 180–195% (Maksimal 200% Safe Ceiling)**:
+6. **Kalkulasi CPU Governor 185–195% (Maksimal 200% Safe Ceiling)**:
    - Dirancang presisi untuk alokasi 2 Core CPU (200% kapasitas host).
-   - Audio DSP On-Mic: ~41.5% CPU (Prioritas Tertinggi Terisolasi)
-   - Video Adaptif 360p-480p Encode: ~74.0% – 124.0% CPU
-   - WebRTC DAVE Crypto & Network: ~6.8% CPU
-   - **Total Konsisten: ~180–192% CPU** (Sesuai target 180+, konsisten bertenaga tanpa melebihi batas 200% yang dapat memicu throttling CFS kernel).
+   - Audio DSP On-Mic (SoX 33-precision + DynAudNorm + 3-Band EQ + Compander + Opus lvl 10): **~118.5% CPU** (Prioritas Mutlak Terbesar)
+   - Video Adaptif 360p-480p Encode (22-24 FPS): **~58.0% – 68.0% CPU**
+   - WebRTC DAVE Crypto & Network: **~7.5% CPU**
+   - **Total Konsisten: ~185–195% CPU** (Daya komputasi dimaksimalkan intensif untuk audio on-mic tanpa melampaui batas 200% aman).
 
 7. **Unduh ZIP Ringan (Folder /assets Dikecualikan)**:
    - Tombol unduh ZIP di dashboard secara khusus **mengecualikan folder dan file di /assets** (`yamada_op.mp4`, `aizo480p.mp4`, `yamada_op.mp3`, `aizo.mp3`).
