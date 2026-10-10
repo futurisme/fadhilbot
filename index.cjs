@@ -30,6 +30,7 @@
 // --------------------------------------------------------------------
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 // 0.1 Polyfill Global File untuk Node.js 18 & 19 (Mengatasi crash Wispbyte)
 if (typeof globalThis.File === 'undefined') {
