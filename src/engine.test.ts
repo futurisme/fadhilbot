@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import JSZip from 'jszip';
 
 function calculateCpuBreakdown(power: number) {
   const p = Math.max(0, Math.min(195, power));
@@ -79,7 +82,14 @@ test('Dual activity Discord RichPresence payload structure', () => {
   assert.equal(dualActivity.assets.large_image, 'minecraft_logo');
 });
 
-import { formatLolPresencePayload, OFFICIAL_LOL_APP_ID, normalizeChampionAssetKey } from './lolRpcEngine.js';
+import {
+  formatLolPresencePayload,
+  OFFICIAL_LOL_APP_ID,
+  getLolChampionSplashUrl,
+  getLolRankIconUrl,
+  getLolOfficialLogoUrl,
+  getYoutubeThumbnailUrl
+} from './lolRpcEngine.js';
 
 test('League of Legends Official Application ID', () => {
   assert.equal(OFFICIAL_LOL_APP_ID, '401518687463587841');
@@ -171,3 +181,63 @@ test('League of Legends Auto-Cycle Simulation phase evolution', () => {
   assert.equal(p4.details, 'Match Summary - Victory!');
 });
 
+test('League of Legends High-Res CDN Asset URLs Generation', () => {
+  const splash = getLolChampionSplashUrl('Yasuo');
+  assert.equal(splash, 'https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg');
+
+  const rank = getLolRankIconUrl('Challenger');
+  assert.equal(rank, 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblems/challenger.png');
+
+  const logo = getLolOfficialLogoUrl();
+  assert.ok(logo.includes('lol-icon.png'));
+
+  const ytThumb = getYoutubeThumbnailUrl('https://youtu.be/L5rL0pBzmAE?si=test');
+  assert.equal(ytThumb, 'https://i.ytimg.com/vi/L5rL0pBzmAE/hqdefault.jpg');
+});
+
+test('Centralized config.json schema and categories integrity', () => {
+  const cfgPath = path.resolve(process.cwd(), 'config.json');
+  assert.ok(fs.existsSync(cfgPath), 'config.json must exist');
+  
+  const raw = fs.readFileSync(cfgPath, 'utf8');
+  const config = JSON.parse(raw);
+
+  // All 8 primary categories must be present and well-structured
+  assert.ok(config.server, 'Category server missing');
+  assert.ok(config.voice, 'Category voice missing');
+  assert.ok(config.malangRouting, 'Category malangRouting missing');
+  assert.ok(config.cpuGovernor, 'Category cpuGovernor missing');
+  assert.ok(config.mediaEngine, 'Category mediaEngine missing');
+  assert.ok(config.richPresence, 'Category richPresence missing');
+  assert.ok(config.playlist, 'Category playlist missing');
+  assert.ok(config.antiDetection, 'Category antiDetection missing');
+
+  // Verify richPresence multi-slot configuration
+  assert.ok(config.richPresence.activityName, 'richPresence slot 1 activityName missing');
+  assert.ok(config.richPresence.largeImage, 'richPresence slot 1 thumbnail missing');
+  assert.ok(config.richPresence.dualActivity, 'richPresence slot 2 dualActivity missing');
+  assert.ok(config.richPresence.dualActivity.lolSettings, 'richPresence slot 2 lolSettings missing');
+  assert.equal(config.richPresence.dualActivity.lolSettings.champion, 'Yasuo');
+});
+
+test('Accurate ZIP Packaging & Compression Byte Calculation', async () => {
+  const zip = new JSZip();
+  const testFiles = [
+    { name: '.env', content: 'DISCORD_TOKEN=TEST_TOKEN_1234567890\nPORT=3000\n' },
+    { name: 'config.json', content: JSON.stringify({ test: true, version: 2026 }) },
+    { name: 'README.md', content: '# Fadhilbot 2026 Engine\nTesting zip compression.\n' }
+  ];
+
+  for (const f of testFiles) {
+    zip.file(f.name, f.content);
+  }
+
+  const blob = await zip.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 9 }
+  });
+
+  assert.ok(blob.length > 0, 'Zip buffer must not be empty');
+  assert.ok(blob.length < 1000, 'Compressed zip buffer should be lightweight (~100-300 bytes)');
+});
